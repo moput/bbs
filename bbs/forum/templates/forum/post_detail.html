@@ -1,96 +1,162 @@
 {% extends 'forum/base.html' %}
+{% load static %}
 
 {% block title %}{{ post.title }} - 校园论坛{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-body">
-                <h2 class="card-title">{{ post.title }}</h2>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <small class="text-muted">
-                        作者: {{ post.author.nickname|default:post.author.username }}
-                        | 发布时间: {{ post.created_at|date:"Y-m-d H:i" }}
-                        | 浏览: {{ post.views }} | 点赞: {{ post.likes }}
-                    </small>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ post.title }}</h2>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    作者: {{ post.author.username }} | 发布时间: {{ post.created_at|date:"Y-m-d H:i" }} | 浏览: {{ post.views }} | 点赞: <span id="post-likes">{{ post.likes }}</span>
+                </small>
+                <div class="d-flex align-items-center">
                     {% if user.is_authenticated %}
-                    <button class="btn btn-outline-primary btn-sm like-btn" data-post-id="{{ post.id }}">
-                        <i class="bi bi-heart{% if not is_liked %}-fill{% endif %}"></i> 点赞
-                    </button>
+                        <button class="like-button {% if is_liked %}liked{% endif %}" 
+                            onclick="likePost({{ post.id }})"
+                            id="like-button"
+                            type="button"
+                            aria-label="点赞"></button>
                     {% endif %}
-                </div>
-                <div class="card-text">
-                    {{ post.content|linebreaks }}
                 </div>
             </div>
         </div>
+        <div class="card-body">
+            <p class="card-text">{{ post.content }}</p>
+        </div>
+    </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h4>评论 ({{ comments.count }})</h4>
-            </div>
-            <div class="card-body">
-                {% if user.is_authenticated %}
-                <form method="post" action="{% url 'forum:create_comment' post.id %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <textarea class="form-control" name="content" rows="3" placeholder="写下你的评论..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">发表评论</button>
-                </form>
-                {% else %}
-                <p class="text-center">请<a href="{% url 'forum:login' %}">登录</a>后发表评论</p>
-                {% endif %}
-
-                <div class="mt-4">
-                    {% for comment in comments %}
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <h6 class="card-subtitle mb-2 text-muted">
-                                    {{ comment.author.nickname|default:comment.author.username }}
-                                </h6>
-                                <small class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</small>
-                            </div>
-                            <p class="card-text">{{ comment.content }}</p>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-center">暂无评论</p>
-                    {% endfor %}
+    <!-- 评论区 -->
+    <div class="mt-4">
+        <h3>评论</h3>
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'forum:create_comment' post.id %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <textarea class="form-control" name="content" rows="3" placeholder="写下你的评论..."></textarea>
                 </div>
+                <button type="submit" class="btn btn-primary">发表评论</button>
+            </form>
+        {% else %}
+            <div class="alert alert-info">
+                请<a href="{% url 'forum:login' %}">登录</a>后发表评论
             </div>
+        {% endif %}
+
+        <div class="mt-4">
+            {% for comment in comments %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <h5 class="card-title">{{ comment.author.username }}</h5>
+                            <small class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</small>
+                        </div>
+                        <p class="card-text">{{ comment.content }}</p>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-info">
+                    暂无评论
+                </div>
+            {% endfor %}
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<style>
+.like-button {
+    width: 40px;
+    height: 40px;
+    background: url('{% static "forum/images/like-sprite.png" %}') no-repeat;
+    background-position: 0 0;
+    background-size: 1160px 40px;  /* 29帧 * 40px = 1160px */
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    margin: 0;
+    transition: transform 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    outline: none !important;
+    background-color: transparent;
+}
+
+.like-button:active {
+    transform: scale(0.95);
+}
+
+.like-button.liked {
+    background-position: -1120px 0;  /* 28帧 * 40px = 1120px */
+}
+
+.like-button.animating {
+    animation: like-animation 0.6s steps(28) forwards;
+}
+
+@keyframes like-animation {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: -1120px 0;  /* 28帧 * 40px = 1120px */
+    }
+}
+
+/* 移除所有浏览器默认样式 */
+.like-button:focus,
+.like-button:active,
+.like-button:hover {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+</style>
+
 <script>
-$(document).ready(function() {
-    $('.like-btn').click(function() {
-        var postId = $(this).data('post-id');
-        var btn = $(this);
+function likePost(postId) {
+    const likeButton = document.getElementById('like-button');
+    const likesCount = document.getElementById('post-likes');
+    
+    // 禁用按钮，防止重复点击
+    likeButton.disabled = true;
+    
+    fetch(`/post/${postId}/like/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.is_liked) {
+            likeButton.classList.add('liked');
+            likeButton.classList.add('animating');
+            setTimeout(() => {
+                likeButton.classList.remove('animating');
+            }, 600);
+        } else {
+            likeButton.classList.remove('liked');
+        }
+        likesCount.textContent = data.likes;
         
-        $.ajax({
-            url: '/post/' + postId + '/like/',
-            method: 'POST',
-            data: {
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.is_liked) {
-                    btn.html('<i class="bi bi-heart-fill"></i> 已点赞');
-                    btn.removeClass('btn-outline-primary').addClass('btn-primary');
-                } else {
-                    btn.html('<i class="bi bi-heart"></i> 点赞');
-                    btn.removeClass('btn-primary').addClass('btn-outline-primary');
-                }
-                btn.closest('.card-body').find('.text-muted').last().text('浏览: ' + response.views + ' | 点赞: ' + response.likes);
-            }
-        });
+        // 动画结束后启用按钮
+        setTimeout(() => {
+            likeButton.disabled = false;
+        }, 600); // 与动画时长相同
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('操作失败，请稍后重试');
+        likeButton.disabled = false;
     });
-});
+}
 </script>
 {% endblock %} 

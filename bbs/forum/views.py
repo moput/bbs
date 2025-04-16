@@ -8,11 +8,12 @@ from django.views.decorators.http import require_POST
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
-from .models import User, Post, Comment, Like
+from .models import User, Post, Comment, Like, Message
 from .forms import UserRegistrationForm, PostForm, CommentForm
 import json
 import random
 import string
+from django.db import models
 
 def send_verification_email(user):
     """发送验证邮件"""
@@ -174,10 +175,16 @@ def post_detail(request, post_id):
     comments = Comment.objects.filter(post=post, parent=None)
     form = CommentForm()
     
+    # 检查用户是否已经点赞
+    is_liked = False
+    if request.user.is_authenticated:
+        is_liked = Like.objects.filter(post=post, user=request.user).exists()
+    
     return render(request, 'forum/post_detail.html', {
         'post': post,
         'comments': comments,
-        'form': form
+        'form': form,
+        'is_liked': is_liked
     })
 
 @login_required
@@ -190,7 +197,19 @@ def create_comment(request, post_id):
         comment.post = post
         comment.author = request.user
         comment.save()
+        
+        # 创建评论消息
+        Message.objects.create(
+            sender=request.user,
+            receiver=post.author,
+            message_type='comment',
+            content=f'评论了你的帖子《{post.title}》：{comment.content[:50]}',
+            post=post,
+            comment=comment
+        )
+        
         messages.success(request, '评论发布成功！')
+    
     return redirect('forum:post_detail', post_id=post_id)
 
 @login_required
@@ -198,11 +217,21 @@ def create_comment(request, post_id):
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     like, created = Like.objects.get_or_create(post=post, user=request.user)
+    
     if not created:
         like.delete()
         post.likes -= 1
     else:
         post.likes += 1
+        # 创建点赞消息
+        Message.objects.create(
+            sender=request.user,
+            receiver=post.author,
+            message_type='like',
+            content=f'点赞了你的帖子《{post.title}》',
+            post=post
+        )
+    
     post.save()
     return JsonResponse({
         'likes': post.likes,
@@ -379,3 +408,100 @@ def forgot_password(request):
             return redirect('forum:forgot_password')
             
     return render(request, 'forum/forgot_password.html')
+
+@login_required
+def my_comments(request):
+    """显示用户的所有评论"""
+    comments = Comment.objects.filter(author=request.user).order_by('-created_at')
+    paginator = Paginator(comments, 10)  # 每页显示10条评论
+    page = request.GET.get('page')
+    comments = paginator.get_page(page)
+    return render(request, 'forum/my_comments.html', {'comments': comments})
+
+@login_required
+def my_likes(request):
+    """显示用户点赞的所有帖子"""
+    likes = Like.objects.filter(user=request.user).order_by('-id')
+    paginator = Paginator(likes, 10)  # 每页显示10条点赞
+    page = request.GET.get('page')
+    likes = paginator.get_page(page)
+    return render(request, 'forum/my_likes.html', {'likes': likes})
+
+@login_required
+def my_posts(request):
+    """显示用户发布的所有帖子"""
+    posts = Post.objects.filter(author=request.user).order_by('-created_at')
+    paginator = Paginator(posts, 10)  # 每页显示10条帖子
+    page = request.GET.get('page')
+    posts = paginator.get_page(page)
+    return render(request, 'forum/my_posts.html', {'posts': posts})
+
+@login_required
+def delete_post(request, post_id):
+    """删除帖子"""
+    post = get_object_or_404(Post, id=post_id)
+    if post.author != request.user:
+        messages.error(request, '您没有权限删除这个帖子')
+        return redirect('forum:post_detail', post_id=post_id)
+    
+    post.delete()
+    messages.success(request, '帖子已删除')
+    return redirect('forum:index')
+
+@login_required
+def delete_comment(request, comment_id):
+    """删除评论"""
+    comment = get_object_or_404(Comment, id=comment_id)
+    if comment.author != request.user:
+        messages.error(request, '您没有权限删除这条评论')
+        return redirect('forum:post_detail', post_id=comment.post.id)
+    
+    post_id = comment.post.id
+    comment.delete()
+    messages.success(request, '评论已删除')
+    return redirect('forum:post_detail', post_id=post_id)
+
+@login_required
+def messages(request):
+    """显示用户的所有消息"""
+    user_messages = Message.objects.filter(receiver=request.user).order_by('-created_at')
+    paginator = Paginator(user_messages, 10)  # 每页显示10条消息
+    page = request.GET.get('page')
+    user_messages = paginator.get_page(page)
+    
+    # 将所有消息标记为已读
+    Message.objects.filter(receiver=request.user, is_read=False).update(is_read=True)
+    
+    return render(request, 'forum/messages.html', {'messages': user_messages})
+
+# @login_required
+# def chat(request, user_id):
+#     """显示与特定用户的聊天界面"""
+#     other_user = get_object_or_404(User, id=user_id)
+#     messages = Message.objects.filter(
+#         models.Q(sender=request.user, receiver=other_user) |
+#         models.Q(sender=other_user, receiver=request.user)
+#     ).order_by('created_at')
+    
+#     return render(request, 'forum/chat.html', {
+#         'other_user': other_user,
+#         'messages': messages
+#     })
+
+# @login_required
+# @require_POST
+# def send_chat_message(request, user_id):
+#     """发送聊天消息"""
+#     other_user = get_object_or_404(User, id=user_id)
+#     content = request.POST.get('content')
+    
+#     if content:
+#         Message.objects.create(
+#             sender=request.user,
+#             receiver=other_user,
+#             message_type='chat',
+#             content=content
+#         )
+#         messages.success(request, '消息发送成功')
+    
+#     return redirect('forum:chat', user_id=user_id)

@@ -65,3 +65,28 @@ class Like(models.Model):
         verbose_name = '点赞'
         verbose_name_plural = verbose_name
         unique_together = ('post', 'user')
+
+class Message(models.Model):
+    """消息模型"""
+    MESSAGE_TYPES = (
+        ('like', '点赞'),
+        ('comment', '评论'),
+    )
+    
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages', verbose_name='发送者')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages', verbose_name='接收者')
+    message_type = models.CharField(max_length=10, choices=MESSAGE_TYPES, verbose_name='消息类型')
+    content = models.TextField(verbose_name='内容')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True, verbose_name='相关帖子')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True, verbose_name='相关评论')
+    is_read = models.BooleanField(default=False, verbose_name='是否已读')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        verbose_name = '消息'
+        verbose_name_plural = verbose_name
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_message_type_display()} from {self.sender.username} to {self.receiver.username}"
+

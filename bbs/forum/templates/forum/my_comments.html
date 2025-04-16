@@ -1,0 +1,68 @@
+{% extends 'forum/base.html' %}
+
+{% block title %}我的评论{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>我的评论</h2>
+    <div class="list-group">
+        {% for comment in comments %}
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-1">
+                    <a href="{% url 'forum:post_detail' comment.post.id %}" class="text-decoration-none">
+                        {{ comment.post.title }}
+                    </a>
+                </h5>
+                <small class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</small>
+            </div>
+            <p class="mb-1">{{ comment.content }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    {% if comment.parent %}
+                    回复 {{ comment.parent.author.username }}
+                    {% else %}
+                    评论
+                    {% endif %}
+                </small>
+                <div>
+                    <a href="{% url 'forum:post_detail' comment.post.id %}" class="btn btn-sm btn-outline-primary">
+                        查看帖子
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                            data-bs-toggle="modal" data-bs-target="#deleteCommentModal{{ comment.id }}">
+                        删除
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 删除评论确认对话框 -->
+        <div class="modal fade" id="deleteCommentModal{{ comment.id }}" tabindex="-1" aria-labelledby="deleteCommentModalLabel{{ comment.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteCommentModalLabel{{ comment.id }}">确认删除</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        确定要删除这条评论吗？此操作不可撤销。
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <form action="{% url 'forum:delete_comment' comment.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">确认删除</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">
+            你还没有发表过任何评论
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

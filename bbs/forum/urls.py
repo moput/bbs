@@ -17,4 +17,10 @@ urlpatterns = [
     path('send-verification-code/', views.send_verification_code, name='send_verification_code'),
     path('forgot-password/', views.forgot_password, name='forgot_password'),
     path('send-reset-password-code/', views.send_reset_password_code, name='send_reset_password_code'),
+    path('my-comments/', views.my_comments, name='my_comments'),
+    path('my-likes/', views.my_likes, name='my_likes'),
+    path('my-posts/', views.my_posts, name='my_posts'),
+    path('post/<int:post_id>/delete/', views.delete_post, name='delete_post'),
+    path('comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
+    path('messages/', views.messages, name='messages'),
 ] 

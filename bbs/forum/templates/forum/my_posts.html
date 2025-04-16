@@ -1,0 +1,64 @@
+{% extends 'forum/base.html' %}
+
+{% block title %}我的帖子{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>我的帖子</h2>
+    <div class="list-group">
+        {% for post in posts %}
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-1">
+                    <a href="{% url 'forum:post_detail' post.id %}" class="text-decoration-none">
+                        {{ post.title }}
+                    </a>
+                </h5>
+                <small class="text-muted">{{ post.created_at|date:"Y-m-d H:i" }}</small>
+            </div>
+            <p class="mb-1">{{ post.content|truncatechars:100 }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    浏览量: {{ post.views }} | 点赞数: {{ post.likes }}
+                </small>
+                <div>
+                    <a href="{% url 'forum:post_detail' post.id %}" class="btn btn-sm btn-outline-primary">
+                        查看详情
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                            data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}">
+                        删除
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 删除确认对话框 -->
+        <div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ post.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteModalLabel{{ post.id }}">确认删除</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        确定要删除帖子 "{{ post.title }}" 吗？此操作不可撤销。
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <form action="{% url 'forum:delete_post' post.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">确认删除</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">
+            你还没有发表过任何帖子
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 
