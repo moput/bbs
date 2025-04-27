@@ -1,0 +1,132 @@
+{% extends 'forum/base.html' %}
+
+{% block title %}注册 - 校园论坛{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">用户注册</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} position-fixed top-0 start-50 translate-middle-x mt-3" role="alert" id="alert-message" style="z-index: 1000; width: fit-content;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" autocomplete="off">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="username" name="username" required 
+                                   placeholder="请输入用户名" autocomplete="off">
+                            <div class="form-text">用户名长度在3-20个字符之间</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="email" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="email" name="email" required 
+                                   placeholder="请输入邮箱" autocomplete="off">
+                            <div class="form-text">请输入有效的邮箱地址</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="password" class="form-label">密码</label>
+                            <input type="password" class="form-control" id="password" name="password" required 
+                                   placeholder="请输入密码" autocomplete="new-password">
+                            <div class="form-text">密码长度至少6位</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="password2" class="form-label">确认密码</label>
+                            <input type="password" class="form-control" id="password2" name="password2" required 
+                                   placeholder="请再次输入密码" autocomplete="new-password">
+                            <div class="form-text">请再次输入密码</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="verification_code" class="form-label">验证码</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="verification_code" name="verification_code" required 
+                                       placeholder="请输入验证码" autocomplete="off">
+                                <button type="button" class="btn btn-outline-secondary" id="send-code">获取验证码</button>
+                            </div>
+                            <div class="form-text">验证码将发送到您的邮箱</div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">注册</button>
+                            <div class="text-center">
+                                <a href="{% url 'forum:login' %}" class="btn btn-link">已有账号？立即登录</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 自动隐藏提示信息
+document.addEventListener('DOMContentLoaded', function() {
+    const alertMessage = document.getElementById('alert-message');
+    if (alertMessage) {
+        setTimeout(function() {
+            const alert = new bootstrap.Alert(alertMessage);
+            alert.close();
+        }, 3000);
+    }
+
+    // 发送验证码
+    document.getElementById('send-code').addEventListener('click', function() {
+        const email = document.getElementById('email').value;
+        if (!email) {
+            alert('请输入邮箱地址');
+            return;
+        }
+
+        const button = this;
+        button.disabled = true;
+        let countdown = 60;
+
+        const timer = setInterval(() => {
+            button.textContent = `重新发送(${countdown}s)`;
+            countdown--;
+            if (countdown < 0) {
+                clearInterval(timer);
+                button.disabled = false;
+                button.textContent = '获取验证码';
+            }
+        }, 1000);
+
+        fetch('{% url "forum:send_verification_code" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ email: email })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('验证码已发送，请查收邮件');
+            } else {
+                alert(data.message);
+                clearInterval(timer);
+                button.disabled = false;
+                button.textContent = '获取验证码';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('发送验证码失败，请稍后重试');
+            clearInterval(timer);
+            button.disabled = false;
+            button.textContent = '获取验证码';
+        });
+    });
+});
+</script>
+{% endblock %} 

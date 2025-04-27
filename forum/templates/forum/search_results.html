@@ -1,0 +1,72 @@
+{% extends 'forum/base.html' %}
+{% load static %}
+
+{% block title %}搜索结果 - 校园论坛{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">搜索结果: "{{ query }}"</h2>
+    
+    {% if posts %}
+        <div class="row">
+            {% for post in posts %}
+                <div class="col-md-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'forum:post_detail' post.id %}" class="text-decoration-none">
+                                    {{ post.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted">
+                                <small>
+                                    作者: {{ post.author.nickname|default:post.author.username }} | 
+                                    发布时间: {{ post.created_at|date:"Y-m-d H:i" }} | 
+                                    浏览: {{ post.views }} | 
+                                    点赞: {{ post.likes }}
+                                </small>
+                            </p>
+                            <p class="card-text">{{ post.content|truncatewords:50 }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- 分页 -->
+        {% if posts.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if posts.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?q={{ query }}&page={{ posts.previous_page_number }}">上一页</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in posts.paginator.page_range %}
+                        {% if posts.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if posts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?q={{ query }}&page={{ posts.next_page_number }}">下一页</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            没有找到相关帖子
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

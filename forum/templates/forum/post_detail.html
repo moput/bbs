@@ -1,0 +1,138 @@
+{% extends 'forum/base.html' %}
+{% load static %}
+
+{% block title %}{{ post.title }} - 校园论坛{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">{{ post.title }}</h2>
+                    <p class="text-muted">
+                        <small>
+                            作者: {{ post.author.nickname|default:post.author.username }} | 
+                            发布时间: {{ post.created_at|date:"Y-m-d H:i" }} | 
+                            浏览: {{ post.views }} | 
+                            点赞: <span id="likes-count">{{ post.likes }}</span>
+                        </small>
+                    </p>
+                    <p class="card-text">{{ post.content }}</p>
+                    {% if user.is_authenticated %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button id="like-btn" class="btn btn-outline-primary {% if is_liked %}active{% endif %}" data-post-id="{{ post.id }}">
+                            <i class="bi bi-heart{% if is_liked %}-fill{% endif %}"></i> 
+                            <span id="like-text">{% if is_liked %}取消点赞{% else %}点赞{% endif %}</span>
+                        </button>
+                        {% if user == post.author %}
+                        <a href="{% url 'forum:delete_post' post.id %}" class="btn btn-outline-danger" onclick="return confirm('确定要删除这个帖子吗？')">删除帖子</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 评论部分 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">评论 ({{ comments.count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.is_authenticated %}
+                    <form id="comment-form" method="post" action="{% url 'forum:create_comment' post.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ form.content }}
+                        </div>
+                        <button type="submit" class="btn btn-primary">发表评论</button>
+                    </form>
+                    {% else %}
+                    <p class="text-muted">请<a href="{% url 'forum:login' %}">登录</a>后发表评论</p>
+                    {% endif %}
+
+                    <div id="comments-list" class="mt-4">
+                        {% for comment in comments %}
+                        <div class="comment mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ comment.author.nickname|default:comment.author.username }}</h6>
+                                    <small class="text-muted ms-2">{{ comment.created_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                                {% if user == comment.author %}
+                                <a href="{% url 'forum:delete_comment' comment.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这条评论吗？')">删除</a>
+                                {% endif %}
+                            </div>
+                            <p class="mt-2 mb-0">{{ comment.content }}</p>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">暂无评论</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 点赞功能
+    const likeBtn = document.getElementById('like-btn');
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            fetch(`/post/${postId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 更新点赞数
+                    document.getElementById('likes-count').textContent = data.likes;
+                    // 更新按钮状态
+                    this.classList.toggle('active');
+                    const likeText = document.getElementById('like-text');
+                    likeText.textContent = data.is_liked ? '取消点赞' : '点赞';
+                    // 更新图标
+                    const icon = this.querySelector('i');
+                    icon.classList.toggle('bi-heart');
+                    icon.classList.toggle('bi-heart-fill');
+                }
+            });
+        });
+    }
+
+    // 评论功能
+    const commentForm = document.getElementById('comment-form');
+    if (commentForm) {
+        commentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 清空表单
+                    this.reset();
+                    // 刷新页面以显示新评论
+                    location.reload();
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,62 @@
+{% extends 'forum/base.html' %}
+
+{% block title %}登录 - 校园论坛{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">用户登录</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} position-fixed top-0 start-50 translate-middle-x mt-3" role="alert" id="alert-message" style="z-index: 1000; width: fit-content;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" autocomplete="off">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="username" name="username" required 
+                                   placeholder="请输入用户名" autocomplete="off">
+                            <div class="form-text">请输入您注册时使用的用户名</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="password" class="form-label">密码</label>
+                            <input type="password" class="form-control" id="password" name="password" required 
+                                   placeholder="请输入密码" autocomplete="new-password">
+                            <div class="form-text">请输入您的登录密码</div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">登录</button>
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'forum:register' %}" class="btn btn-link">还没有账号？立即注册</a>
+                                <a href="{% url 'forum:forgot_password' %}" class="btn btn-link">忘记密码？</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 自动隐藏提示信息
+document.addEventListener('DOMContentLoaded', function() {
+    const alertMessage = document.getElementById('alert-message');
+    if (alertMessage) {
+        setTimeout(function() {
+            const alert = new bootstrap.Alert(alertMessage);
+            alert.close();
+        }, 3000);
+    }
+});
+</script>
+{% endblock %} 

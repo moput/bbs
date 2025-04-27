@@ -1,0 +1,38 @@
+{% extends 'forum/base.html' %}
+
+{% block title %}我的点赞{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>我的点赞</h2>
+    <div class="list-group">
+        {% for like in likes %}
+        <div class="list-group-item" id="post-{{ like.post.id }}">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-1">
+                    <a href="{% url 'forum:post_detail' like.post.id %}" class="text-decoration-none">
+                        {{ like.post.title }}
+                    </a>
+                </h5>
+                <small class="text-muted">{{ like.post.created_at|date:"Y-m-d H:i" }}</small>
+            </div>
+            <p class="mb-1">{{ like.post.content|truncatechars:100 }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    作者: {{ like.post.author.username }} | 发布时间: {{ like.post.created_at|date:"Y-m-d H:i" }} | 浏览: {{ like.post.views }} | 点赞: {{ like.post.likes }}
+                </small>
+                <div>
+                    <a href="{% url 'forum:post_detail' like.post.id %}" class="btn btn-sm btn-outline-primary">
+                        查看帖子
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">
+            你还没有点赞过任何帖子
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

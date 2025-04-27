@@ -1,0 +1,111 @@
+{% extends 'forum/base.html' %}
+{% load static %}
+
+{% block title %}首页 - 校园论坛{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            {% if posts %}
+                {% for post in posts %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'forum:post_detail' post.id %}" class="text-decoration-none">
+                                    {{ post.title }}
+                                </a>
+                                {% if post.is_hot %}
+                                <span class="badge bg-danger">热门</span>
+                                {% endif %}
+                            </h5>
+                            <p class="card-text text-muted">
+                                <small>
+                                    作者: {{ post.author.nickname|default:post.author.username }} | 
+                                    发布时间: {{ post.created_at|date:"Y-m-d H:i" }} | 
+                                    浏览: {{ post.views }} | 
+                                    点赞: {{ post.likes }}
+                                </small>
+                            </p>
+                            <p class="card-text">{{ post.content|truncatewords:50 }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'forum:post_detail' post.id %}" class="btn btn-primary">阅读更多</a>
+                                <small class="text-muted">
+                                    {% if post.comments.count > 0 %}
+                                        {{ post.comments.count }} 条评论
+                                    {% else %}
+                                        暂无评论
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <!-- 分页 -->
+                {% if posts.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if posts.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ posts.previous_page_number }}">上一页</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in posts.paginator.page_range %}
+                                {% if posts.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if posts.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ posts.next_page_number }}">下一页</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    暂无帖子
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">热门帖子</h5>
+                </div>
+                <div class="card-body">
+                    {% if hot_posts %}
+                        <div class="list-group list-group-flush">
+                            {% for post in hot_posts %}
+                                <a href="{% url 'forum:post_detail' post.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ post.title }}</h6>
+                                        <small class="text-muted">{{ post.views }} 浏览</small>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ post.author.nickname|default:post.author.username }} | 
+                                        {{ post.created_at|date:"Y-m-d" }}
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">暂无热门帖子</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

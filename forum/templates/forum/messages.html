@@ -1,0 +1,82 @@
+{% extends 'forum/base.html' %}
+{% load static %}
+
+{% block title %}消息中心 - 校园论坛{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="mb-0">消息中心</h2>
+        </div>
+        <div class="card-body">
+            {% if messages %}
+                <div class="list-group">
+                    {% for message in messages %}
+                        <div class="list-group-item {% if not message.is_read %}list-group-item-info{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">
+                                        {% if message.message_type == 'like' %}
+                                            <i class="fas fa-heart text-danger"></i>
+                                        {% elif message.message_type == 'comment' %}
+                                            <i class="fas fa-comment text-primary"></i>
+                                        {% else %}
+                                            <i class="fas fa-comments text-success"></i>
+                                        {% endif %}
+                                        {{ message.sender.username }}
+                                    </h5>
+                                    <p class="mb-1">{{ message.content }}</p>
+                                    <small class="text-muted">{{ message.created_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                                <div>
+                                    {% if message.post %}
+                                        <a href="{% url 'forum:post_detail' message.post.id %}" class="btn btn-sm btn-outline-primary">
+                                            查看帖子
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 分页 -->
+                {% if messages.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if messages.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ messages.previous_page_number }}">上一页</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in messages.paginator.page_range %}
+                                {% if messages.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if messages.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ messages.next_page_number }}">下一页</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    暂无消息
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
