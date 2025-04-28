@@ -22,10 +22,10 @@
                     <form method="post" autocomplete="off">
                         {% csrf_token %}
                         <div class="form-group mb-3">
-                            <label for="username" class="form-label">用户名</label>
+                            <label for="username" class="form-label">用户名或邮箱</label>
                             <input type="text" class="form-control" id="username" name="username" required 
-                                   placeholder="请输入用户名" autocomplete="off">
-                            <div class="form-text">请输入您注册时使用的用户名</div>
+                                   placeholder="请输入用户名或邮箱" autocomplete="off">
+                            <div class="form-text">请输入您注册时使用的用户名或邮箱</div>
                         </div>
                         <div class="form-group mb-3">
                             <label for="password" class="form-label">密码</label>

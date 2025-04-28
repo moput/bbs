@@ -107,16 +107,49 @@ def resend_verification_code(request, user_id):
     send_verification_email(user)
     return redirect('forum:verify_email', user_id=user.id)
 
+# def user_login(request):
+#     if request.method == 'POST':
+#         username = request.POST.get('username')
+#         password = request.POST.get('password')
+#         user = authenticate(username=username, password=password)
+        
+#         if user:
+#             if user.is_active:
+#                 login(request, user)
+#                 # 如果是管理员，跳转到管理页面
+#                 if user.is_staff or user.is_superuser:
+#                     return redirect('admin:index')
+#                 return redirect('forum:index')
+#             else:
+#                 return redirect('forum:login')
+#         else:
+#             return redirect('forum:login')
+    
+#     return render(request, 'forum/login.html')
+
 def user_login(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username_or_email = request.POST.get('username')
         password = request.POST.get('password')
-        user = authenticate(username=username, password=password)
-        
+        user = None
+
+        # 判断是邮箱还是用户名
+        if '@' in username_or_email:
+            try:
+                from .models import User
+                user_obj = User.objects.get(email=username_or_email)
+                username = user_obj.username
+            except User.DoesNotExist:
+                username = None
+        else:
+            username = username_or_email
+
+        if username:
+            user = authenticate(username=username, password=password)
+
         if user:
             if user.is_active:
                 login(request, user)
-                # 如果是管理员，跳转到管理页面
                 if user.is_staff or user.is_superuser:
                     return redirect('admin:index')
                 return redirect('forum:index')
@@ -124,7 +157,7 @@ def user_login(request):
                 return redirect('forum:login')
         else:
             return redirect('forum:login')
-    
+
     return render(request, 'forum/login.html')
 
 @login_required
